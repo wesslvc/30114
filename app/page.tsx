@@ -45,9 +45,8 @@ export default function Home() {
     setExporting(true);
     try {
       const { toPng } = await import("html-to-image");
-      const surface = getComputedStyle(document.documentElement).getPropertyValue("--surface").trim();
       const dataUrl = await toPng(exportRef.current, {
-        backgroundColor: surface || "#ffffff",
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
       });
       const link = document.createElement("a");
