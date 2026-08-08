@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CLASS_LIST, DAYS, GROUP_ORDER, GROUPS, PERIODS, PERIOD_TIMES } from "@/lib/data";
-import { detectGroupsForClass, fixTeacher, generateTimetable, homeRoomCode, ParsedCell } from "@/lib/logic";
+import { detectGroupsForClass, fixTeacher, generateTimetable, homeRoomCode, ParsedCell, roomColor } from "@/lib/logic";
 
 function groupColorVar(code: string) {
   return `var(--group-${code})`;
@@ -31,11 +31,13 @@ export default function Home() {
     return generateTimetable(classNum, selections);
   }, [classNum, selections]);
 
-  const usedGroups = useMemo(() => {
+  const usedRooms = useMemo(() => {
     if (!timetable) return [];
-    const set = new Set<string>();
-    timetable.forEach((day) => day.forEach((c) => c.kind === "group" && set.add(c.groupCode)));
-    return Array.from(set).sort((a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b));
+    const set = new Set<number>();
+    timetable.forEach((day) =>
+      day.forEach((c) => c.kind === "group" && c.destClassNum !== null && set.add(c.destClassNum))
+    );
+    return Array.from(set).sort((a, b) => a - b);
   }, [timetable]);
 
   const handleExportImage = async () => {
@@ -173,11 +175,12 @@ export default function Home() {
                             </td>
                           );
                         }
+                        const moved = cell.destClassNum !== null;
                         return (
                           <td key={d}>
                             <div
-                              className="cell group"
-                              style={{ borderLeftColor: groupColorVar(cell.groupCode) }}
+                              className={`cell${moved ? " group" : ""}`}
+                              style={moved ? { borderLeftColor: roomColor(cell.destClassNum!) } : undefined}
                             >
                               <span className="subject-line">{cell.line1}</span>
                               {cell.line2 && <span className="room-line">{cell.line2}</span>}
@@ -192,12 +195,13 @@ export default function Home() {
             </div>
           </div>
 
-          {usedGroups.length > 0 && (
+          {usedRooms.length > 0 && (
             <div className="legend">
-              {usedGroups.map((g) => (
-                <span key={g}>
-                  <span className="dot" style={{ background: groupColorVar(g) }} />[{g}] 그룹 이동/동시 수업
-                  (홈베이스 3-{classNum} 외 교실은 #교실번호 표시)
+              <span>색 띠 = 실제 이동하는 교실 (자기 반 3-{classNum}에서 그대로 듣는 수업은 색 표시 없음)</span>
+              {usedRooms.map((n) => (
+                <span key={n}>
+                  <span className="dot" style={{ background: roomColor(n) }} />
+                  3-{n} 교실
                 </span>
               ))}
             </div>

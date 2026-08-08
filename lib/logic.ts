@@ -4,7 +4,13 @@ import type { Group, Option } from "./data";
 export type ParsedCell =
   | { kind: "empty" }
   | { kind: "fixed"; line1: string }
-  | { kind: "group"; groupCode: string; line1: string; line2: string | null };
+  | { kind: "group"; groupCode: string; line1: string; line2: string | null; destClassNum: number | null };
+
+// 이동한 교실(반 번호, 1~13) 기준 색상 — 자기 반 그대로면 destClassNum이 null이라 사용되지 않음
+export function roomColor(classNum: number): string {
+  const hue = ((classNum - 1) * 360) / 13;
+  return `hsl(${hue.toFixed(1)}deg 68% 45%)`;
+}
 
 export function fixTeacher(name: string): string {
   return TEACHER_FIX[name] ?? name;
@@ -87,9 +93,10 @@ export function generateCell(raw: string, classNum: number, selections: Record<s
     const label = `[${groupCode}] ${option.subject} (${teacher})`;
     const home = homeRoomCode(classNum);
     if (option.room === home) {
-      return { kind: "group", groupCode, line1: label, line2: null };
+      return { kind: "group", groupCode, line1: label, line2: null, destClassNum: null };
     }
-    return { kind: "group", groupCode, line1: label, line2: `#${formatRoom(option.room)}` };
+    const destClassNum = parseInt(option.room.slice(1), 10);
+    return { kind: "group", groupCode, line1: label, line2: `#${formatRoom(option.room)}`, destClassNum };
   }
 
   const subjectNorm = normalizeFixedSubject(subjectPart);
