@@ -204,12 +204,24 @@ select.subject-select {
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow);
+  padding: 4px;
+}
+
+.export-target {
+  display: inline-block;
+  background: var(--surface);
+  padding: 14px;
+}
+
+.export-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 2px 10px;
 }
 
 table.timetable {
   border-collapse: collapse;
-  width: 100%;
-  min-width: 720px;
 }
 
 table.timetable th,
@@ -239,7 +251,7 @@ table.timetable tbody th {
 
 .cell {
   min-height: 56px;
-  padding: 8px 6px;
+  padding: 8px 10px;
   font-size: 13px;
   line-height: 1.35;
   display: flex;
@@ -247,7 +259,7 @@ table.timetable tbody th {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  min-width: 92px;
+  white-space: nowrap;
 }
 
 .cell.group {
@@ -295,6 +307,11 @@ table.timetable tbody th {
   color: white;
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -321,14 +338,4 @@ footer.note {
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.7;
-}
-
-@media print {
-  .card:not(.result-card),
-  .toolbar {
-    display: none !important;
-  }
-  body {
-    background: white;
-  }
 }

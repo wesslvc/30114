@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CLASS_LIST, DAYS, GROUP_ORDER, GROUPS, PERIODS, PERIOD_TIMES } from "@/lib/data";
 import { detectGroupsForClass, fixTeacher, generateTimetable, homeRoomCode, ParsedCell } from "@/lib/logic";
 
@@ -11,6 +11,8 @@ function groupColorVar(code: string) {
 export default function Home() {
   const [classNum, setClassNum] = useState<number | null>(null);
   const [selections, setSelections] = useState<Record<string, string>>({});
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const detectedDefaults = useMemo(() => (classNum ? detectGroupsForClass(classNum) : {}), [classNum]);
   const groupCodes = useMemo(
@@ -35,6 +37,25 @@ export default function Home() {
     timetable.forEach((day) => day.forEach((c) => c.kind === "group" && set.add(c.groupCode)));
     return Array.from(set).sort((a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b));
   }, [timetable]);
+
+  const handleExportImage = async () => {
+    if (!exportRef.current || !classNum) return;
+    setExporting(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const surface = getComputedStyle(document.documentElement).getPropertyValue("--surface").trim();
+      const dataUrl = await toPng(exportRef.current, {
+        backgroundColor: surface || "#ffffff",
+        pixelRatio: 2,
+      });
+      const link = document.createElement("a");
+      link.download = `${classNum}반_시간표.png`;
+      link.href = dataUrl;
+      link.click();
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <main className="page">
@@ -110,62 +131,65 @@ export default function Home() {
             <span className="step-badge">3</span>{classNum}반 개인 시간표
           </h2>
           <div className="toolbar">
-            <button className="btn primary" onClick={() => window.print()}>
-              인쇄 / PDF 저장
+            <button className="btn primary" onClick={handleExportImage} disabled={exporting}>
+              {exporting ? "이미지 생성 중..." : "이미지로 저장"}
             </button>
           </div>
           <div className="table-wrap">
-            <table className="timetable">
-              <thead>
-                <tr>
-                  <th>교시</th>
-                  {DAYS.map((d) => (
-                    <th key={d}>{d}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {PERIODS.map((p, pIdx) => (
-                  <tr key={p}>
-                    <th>
-                      {p}교시
-                      <br />
-                      {PERIOD_TIMES[pIdx]}
-                    </th>
-                    {DAYS.map((d, dIdx) => {
-                      const cell = timetable[dIdx][pIdx];
-                      if (cell.kind === "empty") {
+            <div className="export-target" ref={exportRef}>
+              <div className="export-title">{classNum}반 개인 시간표</div>
+              <table className="timetable">
+                <thead>
+                  <tr>
+                    <th>교시</th>
+                    {DAYS.map((d) => (
+                      <th key={d}>{d}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {PERIODS.map((p, pIdx) => (
+                    <tr key={p}>
+                      <th>
+                        {p}교시
+                        <br />
+                        {PERIOD_TIMES[pIdx]}
+                      </th>
+                      {DAYS.map((d, dIdx) => {
+                        const cell = timetable[dIdx][pIdx];
+                        if (cell.kind === "empty") {
+                          return (
+                            <td key={d}>
+                              <div className="cell empty">-</div>
+                            </td>
+                          );
+                        }
+                        if (cell.kind === "fixed") {
+                          return (
+                            <td key={d}>
+                              <div className="cell">
+                                <span className="subject-line">{cell.line1}</span>
+                              </div>
+                            </td>
+                          );
+                        }
                         return (
                           <td key={d}>
-                            <div className="cell empty">-</div>
-                          </td>
-                        );
-                      }
-                      if (cell.kind === "fixed") {
-                        return (
-                          <td key={d}>
-                            <div className="cell">
+                            <div
+                              className="cell group"
+                              style={{ borderLeftColor: groupColorVar(cell.groupCode) }}
+                            >
                               <span className="subject-line">{cell.line1}</span>
+                              {cell.line2 && <span className="room-line">{cell.line2}</span>}
                             </div>
                           </td>
                         );
-                      }
-                      return (
-                        <td key={d}>
-                          <div
-                            className="cell group"
-                            style={{ borderLeftColor: groupColorVar(cell.groupCode) }}
-                          >
-                            <span className="subject-line">{cell.line1}</span>
-                            {cell.line2 && <span className="room-line">{cell.line2}</span>}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {usedGroups.length > 0 && (
