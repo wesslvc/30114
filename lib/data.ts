@@ -288,3 +288,6 @@ export const CLASS_TIMETABLE: Record<number, string[][]> = {
 };
 
 export const CLASS_LIST = Array.from({ length: 13 }, (_, i) => i + 1);
+
+// 그룹 선택 카드 표시 순서: 가나다라마 → A~F
+export const GROUP_ORDER = ["가", "나", "다", "라", "마", "A", "B", "C", "D", "E", "F"];

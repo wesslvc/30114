@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CLASS_LIST, DAYS, GROUPS, PERIODS, PERIOD_TIMES } from "@/lib/data";
-import { detectGroupsForClass, generateTimetable, homeRoomCode, ParsedCell } from "@/lib/logic";
+import { CLASS_LIST, DAYS, GROUP_ORDER, GROUPS, PERIODS, PERIOD_TIMES } from "@/lib/data";
+import { detectGroupsForClass, fixTeacher, generateTimetable, homeRoomCode, ParsedCell } from "@/lib/logic";
 
 function groupColorVar(code: string) {
   return `var(--group-${code})`;
@@ -13,7 +13,11 @@ export default function Home() {
   const [selections, setSelections] = useState<Record<string, string>>({});
 
   const detectedDefaults = useMemo(() => (classNum ? detectGroupsForClass(classNum) : {}), [classNum]);
-  const groupCodes = useMemo(() => Object.keys(detectedDefaults), [detectedDefaults]);
+  const groupCodes = useMemo(
+    () =>
+      Object.keys(detectedDefaults).sort((a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b)),
+    [detectedDefaults]
+  );
 
   useEffect(() => {
     setSelections(detectedDefaults);
@@ -29,7 +33,7 @@ export default function Home() {
     if (!timetable) return [];
     const set = new Set<string>();
     timetable.forEach((day) => day.forEach((c) => c.kind === "group" && set.add(c.groupCode)));
-    return Array.from(set);
+    return Array.from(set).sort((a, b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b));
   }, [timetable]);
 
   return (
@@ -88,7 +92,7 @@ export default function Home() {
                     >
                       {group.options.map((opt) => (
                         <option key={opt.short} value={opt.short}>
-                          {opt.subject} ({opt.teacher})
+                          {opt.subject} ({fixTeacher(opt.teacher)})
                         </option>
                       ))}
                     </select>
